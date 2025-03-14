@@ -1,8 +1,20 @@
 import xmlrpc.client
 from datetime import datetime
 
-# Connect to the RPC server
-server = xmlrpc.client.ServerProxy("http://localhost:8000", allow_none=True)
+PORTS = [8000, 8001, 8002]
+
+def get_server_proxy():
+    for port in PORTS:
+        try:
+            server = xmlrpc.client.ServerProxy(f"http://localhost:{port}", allow_none=True)
+            server.add_note("test", "Checking server status", datetime.now().isoformat())  #Check if works or not
+            print(f"Connected to server on port {port}")
+            return server
+        except:
+            print(f"Server on port {port} is unavailable.")
+    raise ConnectionError("No available servers found.")
+
+server = get_server_proxy()
 
 def show_menu():
     print("\nSelect an option:")

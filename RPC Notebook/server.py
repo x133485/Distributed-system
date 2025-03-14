@@ -4,11 +4,11 @@ from socketserver import ThreadingMixIn
 from datetime import datetime
 import requests
 import os
-
+import sys
 
 XML_FILE = "notes.xml"
-def init_xml():
 
+def init_xml():
     if not os.path.exists(XML_FILE):
         root = ET.Element("notes")
         tree = ET.ElementTree(root)
@@ -18,21 +18,19 @@ def add_note(topic, text, timestamp):
     init_xml()
     tree = ET.parse(XML_FILE)
     root = tree.getroot()
-
+    # exits condition
     topic_elem = None
     for t in root.findall("topic"):
         if t.get("name") == topic:
             topic_elem = t
             break
-
+    # Can not found
     if topic_elem is None:
         topic_elem = ET.SubElement(root, "topic", name=topic)
-
-
+    
     note_elem = ET.SubElement(topic_elem, "note")
     text_elem = ET.SubElement(note_elem, "text")
     text_elem.text = text
-
     timestamp_elem = ET.SubElement(note_elem, "timestamp")
     timestamp_elem.text = timestamp
 
@@ -45,11 +43,11 @@ def get_topic(topic):
     tree = ET.parse(XML_FILE)
     root = tree.getroot()
     topic_elem = None
-    for t in root.findall("topic"):
+    for t in root.findall("topic"):  #IF we can find 
         if t.get("name") == topic:
             topic_elem = t
             break
-    if topic_elem is None:
+    if topic_elem is None: #Do not have
         return "Topic not found."
     
     notes = []
@@ -61,7 +59,7 @@ def get_topic(topic):
 
 def append_wikipedia(topic, search_term):
 
-    url = "https://en.wikipedia.org/w/api.php"
+    url = "https://en.wikipedia.org/w/api.php"  #Use API to query
     params = {
         "action": "query",
         "list": "search",
@@ -76,20 +74,19 @@ def append_wikipedia(topic, search_term):
     if not search_results:
         return "No Wikipedia article found for the search term."
     
+    # Use the first search result and create a link to the article.
     article = search_results[0]
     pageid = article.get("pageid")
     wiki_link = f"https://en.wikipedia.org/?curid={pageid}"
     
-    # Append the Wikipedia link as a note for the topic.
-    timestamp = datetime.now().isoformat
+    # Append the Wikipedia link 
+    timestamp = datetime.now().isoformat()
     note_text = f"Wikipedia article for '{search_term}': {wiki_link}"
     add_note(topic, note_text, timestamp)
     return f"Wikipedia info added to topic '{topic}'."
 
 def get_wikipedia_link(search_term):
-    """
-    (Optional) Return only a Wikipedia link based on a search term without appending it.
-    """
+    
     url = "https://en.wikipedia.org/w/api.php"
     params = {
         "action": "query",
@@ -115,8 +112,9 @@ class ThreadedXMLRPCServer(ThreadingMixIn, SimpleXMLRPCServer):
     pass
 
 if __name__ == "__main__":
-    server = ThreadedXMLRPCServer(("localhost", 8000), allow_none=True)
-    print("Server is running on port 8000...")
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
+    server = ThreadedXMLRPCServer(("localhost", port), allow_none=True)  #For multi server
+    print(f"Server is running on port {port}...")
     
     # Register the functions so they can be called remotely.
     server.register_function(add_note, "add_note")
@@ -125,7 +123,7 @@ if __name__ == "__main__":
     server.register_function(get_wikipedia_link, "get_wikipedia_link")
     
     # Start the server’s main loop.
-    server.serve_forever()
+    server.serve_forever() 
 
 
 
